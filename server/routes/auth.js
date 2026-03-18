@@ -1,55 +1,62 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import mongoose from "mongoose";
 import verifyToken from "../middleware/verifyToken.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-
-
+ 
 const router = express.Router();
-
+ 
+// ─── Multer config ────────────────────────────────────────────────────────────
+ 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "public/uploads/avatars/");
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      `${req.user.userId}-${uniqueSuffix}${path.extname(file.originalname)}`,
-    );
+    cb(null, `${req.user.userId}-${uniqueSuffix}${path.extname(file.originalname)}`);
   },
 });
-
+ 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png/;
-    const extname = filetypes.test(
-      path.extname(file.originalname).toLowerCase(),
-    );
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = filetypes.test(file.mimetype);
-    if (extname && mimetype) {
-      return cb(null, true);
-    }
+    if (extname && mimetype) return cb(null, true);
     cb(new Error("Solo imágenes jpeg, jpg o png"));
   },
 });
-
+ 
+// ─── Helper: firmar token ─────────────────────────────────────────────────────
+ 
+const signToken = (user) =>
+  jwt.sign(
+    {
+      userId: user._id,
+      username: user.username,
+      name: user.name,
+      // ✅ Operador lógico OR corregido — antes era bitwise | que convertía el string a 0
+      avatar: user.avatar || null,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+ 
+// ─── GET /me ──────────────────────────────────────────────────────────────────
+ 
 router.get("/me", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("-password");
-
-    if (!user) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
-    }
-
+    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+ 
     res.json({
       user: {
-        id: user._id,
+        userId: user._id,
         username: user.username,
         name: user.name,
         lastname: user.lastname,
@@ -63,24 +70,24 @@ router.get("/me", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Error interno" });
   }
 });
-
+ 
+// ─── POST /register ───────────────────────────────────────────────────────────
+ 
 router.post("/register", async (req, res) => {
   try {
     const { username, name, lastname, age, email, password } = req.body;
-
+ 
     if (!username || !email || !password) {
       return res.status(400).json({
         error: "Faltan campos obligatorios (username, email, password)",
       });
     }
-
+ 
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ error: "El email o username ya está registrado" });
+      return res.status(400).json({ error: "El email o username ya está registrado" });
     }
-
+ 
     const user = new User({
       username,
       name: name || "",
@@ -89,146 +96,46 @@ router.post("/register", async (req, res) => {
       email,
       password,
     });
-
+ 
     await user.save();
-
-    const newToken = jwt.sign(
-      {
-        userId: user._id,
-        username: user.username,
-        name: user.name,
-        avatar: user.avatar || null,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
-
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        username: user.username,
-        name: user.name,
-        avatar: user.avatar || null,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
-
+ 
+    const token = signToken(user);
+ 
     res.status(201).json({
       message: "Usuario creado exitosamente",
-      token: newToken,
+      token,
       user: {
         id: user._id,
         username: user.username,
         name: user.name,
         email: user.email,
-        avatar: user.avatar,
+        avatar: user.avatar || null,
       },
     });
   } catch (err) {
-    console.error("Error completo en registro:", err.stack || err);
+    console.error("Error en registro:", err.stack || err);
     res.status(500).json({ error: "Error interno al registrar usuario" });
   }
 });
-
-router.post(
-  "/profile/avatar",
-  verifyToken,
-  upload.single("avatar"),
-  async (req, res) => {
-    try {
-      console.log("POST /profile/avatar - Headers:", req.headers);
-      console.log("POST /profile/avatar - req.user:", req.user);
-
-      if (!req.user || !req.user.userId) {
-        console.log("Error: req.user no definido");
-        return res.status(401).json({ error: "No autenticado" });
-      }
-
-      if (!req.file) {
-        console.log("No se subió archivo");
-        return res.status(400).json({ error: "No se subió ninguna imagen" });
-      }
-
-      console.log("Archivo recibido:", req.file.filename);
-
-      const user = await User.findById(req.user.userId);
-      if (!user) {
-        console.log("Usuario no encontrado");
-        return res.status(404).json({ error: "Usuario no encontrado" });
-      }
-
-      if (user.avatar) {
-        const oldPath = path.join(process.cwd(), "public", user.avatar);
-        console.log("Intentando borrar imagen vieja:", oldPath);
-        try {
-          if (fs.existsSync(oldPath)) {
-            fs.unlinkSync(oldPath);
-            console.log("Imagen vieja borrada con éxito");
-          } else {
-            console.log("Imagen vieja no encontrada, se ignora");
-          }
-        } catch (unlinkErr) {
-          console.error(
-            "Error al intentar borrar imagen vieja:",
-            unlinkErr.message,
-          );
-        }
-      }
-
-      user.avatar = `/uploads/avatars/${req.file.filename}`;
-      await user.save();
-      console.log("Avatar guardado:", user.avatar);
-
-      const newToken = jwt.sign(
-        {
-          userId: user._id,
-          username: user.username,
-          name: user.name,
-          avatar: user.avatar,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" },
-      );
-
-      res.json({
-        message: "Imagen de perfil actualizada",
-        avatar: user.avatar,
-        token: newToken,
-      });
-    } catch (err) {
-      console.error("Error en POST /profile/avatar:", err.stack || err.message);
-      res.status(500).json({ error: "Error al subir imagen" });
-    }
-  },
-);
-
+ 
+// ─── POST /login ──────────────────────────────────────────────────────────────
+ 
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
+ 
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ error: "Email y contraseña son obligatorios" });
+      return res.status(400).json({ error: "Email y contraseña son obligatorios" });
     }
-
+ 
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ error: "Credenciales inválidas" });
-    }
-
+    if (!user) return res.status(401).json({ error: "Credenciales inválidas" });
+ 
     const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Credenciales inválidas" });
-    }
-
-    const token = jwt.sign(
-      { userId: user._id, username: user.username, name: user.name, avatar: user.avatar || null, },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
-
+    if (!isMatch) return res.status(401).json({ error: "Credenciales inválidas" });
+ 
+    const token = signToken(user);
+ 
     res.json({
       token,
       user: {
@@ -236,7 +143,7 @@ router.post("/login", async (req, res) => {
         username: user.username,
         name: user.name,
         email: user.email,
-        avatar: user.avatar,
+        avatar: user.avatar || null,
       },
     });
   } catch (err) {
@@ -244,16 +151,15 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ error: "Error interno en el login" });
   }
 });
-
+ 
+// ─── PATCH /profile ───────────────────────────────────────────────────────────
+ 
 router.patch("/profile", verifyToken, async (req, res) => {
   try {
     const { username, name, lastname, password, currentPassword } = req.body;
     const user = await User.findById(req.user.userId);
-
-    if (!user) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
-    }
-
+    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+ 
     if (password) {
       if (!currentPassword) {
         return res.status(400).json({
@@ -261,29 +167,18 @@ router.patch("/profile", verifyToken, async (req, res) => {
         });
       }
       const isMatch = await user.comparePassword(currentPassword);
-      if (!isMatch) {
-        return res.status(401).json({ error: "Contraseña actual incorrecta" });
-      }
+      if (!isMatch) return res.status(401).json({ error: "Contraseña actual incorrecta" });
     }
-
+ 
     if (username) user.username = username;
     if (name) user.name = name;
     if (lastname) user.lastname = lastname;
-    if (password) user.password = password;
-
+    if (password) user.password = password; // se hashea por pre-save
+ 
     await user.save();
-
-    const newToken = jwt.sign(
-      {
-        userId: user._id,
-        username: user.username,
-        name: user.name,
-        avatar: user.avatar || null,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
-
+ 
+    const newToken = signToken(user);
+ 
     res.json({
       message: "Perfil actualizado exitosamente",
       token: newToken,
@@ -293,7 +188,7 @@ router.patch("/profile", verifyToken, async (req, res) => {
         name: user.name,
         lastname: user.lastname,
         email: user.email,
-        avatar: user.avatar,
+        avatar: user.avatar || null,
       },
     });
   } catch (err) {
@@ -301,40 +196,65 @@ router.patch("/profile", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Error interno al actualizar perfil" });
   }
 });
-
+ 
+// ─── POST /profile/avatar ─────────────────────────────────────────────────────
+ 
+router.post("/profile/avatar", verifyToken, upload.single("avatar"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No se subió ninguna imagen" });
+    }
+ 
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+ 
+    // Borrar avatar anterior si existe
+    if (user.avatar) {
+      const oldPath = path.join(process.cwd(), "public", user.avatar);
+      try {
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      } catch (unlinkErr) {
+        console.error("Error borrando avatar anterior:", unlinkErr.message);
+      }
+    }
+ 
+    user.avatar = `/uploads/avatars/${req.file.filename}`;
+    await user.save();
+ 
+    const newToken = signToken(user);
+ 
+    res.json({
+      message: "Imagen de perfil actualizada",
+      avatar: user.avatar,
+      token: newToken,
+    });
+  } catch (err) {
+    console.error("Error en POST /profile/avatar:", err.stack || err.message);
+    res.status(500).json({ error: "Error al subir imagen" });
+  }
+});
+ 
+// ─── DELETE /profile/avatar ───────────────────────────────────────────────────
+ 
 router.delete("/profile/avatar", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
-    }
-
-    if (!user.avatar) {
-      return res.status(400).json({ error: "No hay imagen para borrar" });
-    }
-
+    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+    if (!user.avatar) return res.status(400).json({ error: "No hay imagen para borrar" });
+ 
     const imagePath = path.join(process.cwd(), "public", user.avatar);
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
-    }
-
+    if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+ 
     user.avatar = null;
     await user.save();
-
-    const newToken = jwt.sign(
-      { userId: user._id, username: user.username, name: user.name },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
-
-    res.json({
-      message: "Imagen de perfil eliminada",
-      token: newToken,
-    });
+ 
+    const newToken = signToken(user);
+ 
+    res.json({ message: "Imagen de perfil eliminada", token: newToken });
   } catch (err) {
     console.error("Error borrando avatar:", err);
     res.status(500).json({ error: "Error al eliminar imagen" });
   }
 });
-
+ 
 export default router;

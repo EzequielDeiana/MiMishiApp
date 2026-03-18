@@ -10,6 +10,8 @@
 
 public/uploads/
 
+/server/public/uploads
+
 *.log
 npm-debug.log*
 
