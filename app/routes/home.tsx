@@ -14,6 +14,7 @@ import {
 import type { ChartData, ChartOptions } from 'chart.js';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+
  
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
  
@@ -109,7 +110,7 @@ export default function Home() {
         ¡Bienvenido de nuevo, {user?.username || 'Usuario'}!
       </h1>
  
-      <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-10">
+      <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-lg border border-pink-500 dark:border-pink-300 mb-10">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-100">
           Resumen del mes actual
         </h2>
@@ -137,7 +138,7 @@ export default function Home() {
         </div>
       </div>
  
-      <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-lg border border-blue-400 dark:border-blue-300">
         {summary.length === 0 ? (
           <p className="text-center text-gray-600 dark:text-gray-400 py-16 text-lg">
             Aún no hay transacciones registradas. ¡Agrega tu primera!
