@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router';
+import logo from '../assets/images/logo.png';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -24,14 +25,20 @@ export default function Navbar() {
   if (!user) return null;
 
   return (
-    <nav className="bg-gray-800 dark:bg-gray-950 text-white shadow-lg fixed top-0 left-0 right-0 z-50 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-gray-800 dark:bg-gray-950 text-white shadow-lg fixed top-0 left-0 right-0 z-50 transition-colors border-b border-blue-400 dark:border-blue-300">
+      <div className='bg-gray-800 dark:bg-gray-950 text-white shadow-lg fixed top-0 left-0 right-0 z-50 transition-colors border-b border-pink-400 dark:border-pink-300'></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link to="/" className="text-xl font-bold">
-              MiMishu
+              <img
+                src={logo}
+                alt="Logo"
+                className="w-42 h-24 object-cover"
+              >
+              </img>
             </Link>
           </div>
 
@@ -55,10 +62,25 @@ export default function Navbar() {
             >
               Perfil
             </Link>
+            <button
+              style={{ cursor: 'pointer' }}
+              onClick={logout}
+              className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 dark:hover:bg-gray-800 transition"
+            >
+              Cerrar Sesión
+            </button>
           </div>
 
           {/* Usuario + Logout + Dark toggle (desktop) */}
           <div className="hidden md:flex items-center space-x-4">
+            <button
+              style={{ cursor: 'pointer' }}
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-800 transition"
+              aria-label="Toggle dark mode"
+            >
+              {darkMode ? '☀️' : '🌙'}
+            </button>
             <div className="flex items-center space-x-2">
               {user.avatar ? (
                 <img
@@ -76,21 +98,6 @@ export default function Navbar() {
                 {user.username || 'Usuario'}
               </span>
             </div>
-
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="p-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-800 transition"
-              aria-label="Toggle dark mode"
-            >
-              {darkMode ? '☀️' : '🌙'}
-            </button>
-
-            <button
-              onClick={logout}
-              className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition"
-            >
-              Cerrar Sesión
-            </button>
           </div>
 
           {/* Hamburguesa mobile */}
