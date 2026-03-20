@@ -32,11 +32,7 @@ export function useAuth() {
   return context;
 }
  
-interface AuthProviderProps {
-  children: ReactNode;
-}
- 
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -80,9 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (formData: RegisterForm) => {
     try {
       const response = await axios.post('/api/auth/register', formData);
-      if (!response.data.token) {
-        throw new Error('No token en respuesta');
-      }
+      if (!response.data.token) throw new Error('No token en respuesta');
       localStorage.setItem('token', response.data.token);
       const decoded = jwtDecode<User>(response.data.token);
       setUser(decoded);
@@ -105,4 +99,3 @@ export function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   );
 }
- 

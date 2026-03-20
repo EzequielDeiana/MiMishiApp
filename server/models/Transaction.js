@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-
+ 
 const transactionSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -19,6 +19,14 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  // El servidor acepta cualquier string no vacío para permitir categorías personalizadas
+  category: {
+    type: String,
+    required: false,
+    default: 'other',
+    trim: true,
+    maxlength: 50,   // límite razonable para evitar abusos
+  },
   value: {
     type: Number,
     required: true,
@@ -29,5 +37,5 @@ const transactionSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
-
+ 
 export default mongoose.model('Transaction', transactionSchema);

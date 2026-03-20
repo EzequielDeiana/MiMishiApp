@@ -9,9 +9,10 @@ import {
 import { AuthProvider } from './context/AuthContext';
 import type { Route } from "./+types/root";
 import "./app.css";
-import Navbar from './routes/navbar';
+// ✅ i18n inicializado aquí con guard SSR — funciona en servidor y cliente
+import './i18n/i18n';
 import { Toaster } from 'react-hot-toast';
-
+ 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
@@ -24,7 +25,7 @@ export const links: Route.LinksFunction = () => [
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
 ];
-
+ 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="scroll-smooth">
@@ -37,28 +38,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
         <AuthProvider>
           {children}
-
           <Toaster
             position="bottom-right"
             toastOptions={{
               duration: 5000,
-              style: {
-                borderRadius: '10px',
-                background: '#333',
-                color: '#fff',
-              },
-              success: {
-                style: {
-                  background: '#10b981',
-                  color: 'white',
-                },
-              },
-              error: {
-                style: {
-                  background: '#ef4444',
-                  color: 'white',
-                },
-              },
+              style: { borderRadius: '10px', background: '#333', color: '#fff' },
+              success: { style: { background: '#10b981', color: 'white' } },
+              error: { style: { background: '#ef4444', color: 'white' } },
             }}
           />
         </AuthProvider>
@@ -68,16 +54,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
     </html>
   );
 }
-
+ 
 export default function App() {
   return <Outlet />;
 }
-
+ 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let message = "Oops!";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
-
+ 
   if (isRouteErrorResponse(error)) {
     message = error.status === 404 ? "404" : "Error";
     details =
@@ -88,13 +74,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     details = error.message;
     stack = error.stack;
   }
-
+ 
   return (
     <main className="pt-16 p-4 container mx-auto max-w-5xl">
       <h1 className="text-4xl font-bold text-red-600 dark:text-red-400 mb-4">{message}</h1>
       <p className="text-lg text-gray-700 dark:text-gray-300 mb-6">{details}</p>
       {stack && (
-        <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto text-sm text-gray-800 dark:text-gray-200">
+        <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto text-sm">
           <code>{stack}</code>
         </pre>
       )}
