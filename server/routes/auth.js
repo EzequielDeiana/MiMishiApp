@@ -40,7 +40,6 @@ const signToken = (user) =>
       userId: user._id,
       username: user.username,
       name: user.name,
-      // ✅ Operador lógico OR corregido — antes era bitwise | que convertía el string a 0
       avatar: user.avatar || null,
     },
     process.env.JWT_SECRET,
