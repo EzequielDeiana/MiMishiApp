@@ -6,19 +6,18 @@ import { useNavigate } from 'react-router';
 import type { RegisterForm } from '../types/auth';
  
 interface User {
-  userId: string;
+  userId:    string;
   username?: string;
-  name?: string;
+  name?:     string;
   lastname?: string;
-  avatar?: string | null;
 }
  
 interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (formData: RegisterForm) => Promise<void>;
-  logout: () => void;
-  isLoading: boolean;
+  user:        User | null;
+  login:       (email: string, password: string) => Promise<void>;
+  register:    (formData: RegisterForm) => Promise<void>;
+  logout:      () => void;
+  isLoading:   boolean;
   refreshUser: () => Promise<void>;
 }
  
@@ -33,7 +32,7 @@ export function useAuth() {
 }
  
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser]         = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
  
