@@ -241,7 +241,6 @@ export default function Home() {
       </div>
 
       {/* ─── Métricas adicionales ─────────────────────────────────────────────── */}
-      {/* ─── Métricas adicionales ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow border border-gray-200 dark:border-gray-700 text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">{t('home.daily_avg')}</p>

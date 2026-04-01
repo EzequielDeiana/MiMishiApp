@@ -19,13 +19,13 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  // El servidor acepta cualquier string no vacío para permitir categorías personalizadas
+
   category: {
     type: String,
     required: false,
     default: 'other',
     trim: true,
-    maxlength: 50,   // límite razonable para evitar abusos
+    maxlength: 50,
   },
   value: {
     type: Number,
